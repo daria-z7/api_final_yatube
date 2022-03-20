@@ -56,7 +56,6 @@ class FollowSerializer(serializers.ModelSerializer):
         queryset=User.objects.all(),
     )
 
-
     class Meta:
         fields = ('user', 'following')
         read_only_fields = ('user',)

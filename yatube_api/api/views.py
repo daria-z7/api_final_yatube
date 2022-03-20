@@ -8,7 +8,8 @@ from rest_framework import filters
 from rest_framework import mixins
 
 from posts.models import Post, Group, Follow, User
-from api.serializers import PostSerializer, GroupSerializer, CommentSerializer, FollowSerializer
+from api.serializers import PostSerializer, GroupSerializer
+from api.serializers import CommentSerializer, FollowSerializer
 from api.permissions import OwnerOrReadOnly
 
 
@@ -20,7 +21,7 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
-    
+
 
 class GroupViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Group.objects.all()
@@ -56,12 +57,17 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class CreateListViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
+class CreateListViewSet(
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet
+):
     pass
 
 
 class FollowViewSet(CreateListViewSet):
     serializer_class = FollowSerializer
+
     def get_queryset(self):
         user = self.request.user
         return Follow.objects.filter(user=user)
@@ -69,7 +75,9 @@ class FollowViewSet(CreateListViewSet):
     search_fields = ('following__username',)
 
     def perform_create(self, serializer):
-        following = User.objects.get(username=self.request.data.get('following'))
+        following = User.objects.get(
+            username=self.request.data.get('following')
+        )
         return serializer.save(
             user=self.request.user,
             following=following,
