@@ -1,16 +1,13 @@
 from django.shortcuts import get_object_or_404
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions, filters
 from rest_framework.pagination import LimitOffsetPagination
-from rest_framework import permissions
-from rest_framework import filters
-from rest_framework import mixins
+from rest_framework.response import Response
 
 from posts.models import Post, Group, Follow, User
 from api.serializers import PostSerializer, GroupSerializer
 from api.serializers import CommentSerializer, FollowSerializer
 from api.permissions import OwnerOrReadOnly
+from api.mixins import CreateListViewSet
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -52,32 +49,20 @@ class CommentViewSet(viewsets.ModelViewSet):
             post=get_object_or_404(Post, id=self.kwargs.get("post_id"))
         )
 
-    def perform_destroy(self, instance):
-        instance.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class CreateListViewSet(
-    mixins.CreateModelMixin,
-    mixins.ListModelMixin,
-    viewsets.GenericViewSet
-):
-    pass
-
 
 class FollowViewSet(CreateListViewSet):
     serializer_class = FollowSerializer
 
     def get_queryset(self):
         user = self.request.user
-        return Follow.objects.filter(user=user)
-    filter_backends = (filters.SearchFilter,)
+        # return Follow.objects.filter(user=user)
+        return user.follower.all()
     search_fields = ('following__username',)
+    filter_backends = (filters.SearchFilter,)
 
     def perform_create(self, serializer):
-        following = User.objects.get(
-            username=self.request.data.get('following')
-        )
+        # following = User.objects.get(username=self.request.data.get('following'))
+        following=get_object_or_404(User, username=self.request.data.get('following'))
         return serializer.save(
             user=self.request.user,
             following=following,
